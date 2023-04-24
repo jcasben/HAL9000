@@ -8,9 +8,7 @@
 EMEM:   DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017,$F160
         DC.W $F170,$CE70,$3040,$EFFD,$501E,$4008,$8000,$0001
         DC.W $0001,$0001,$0001,$0001,$0001,$0000,$0000,$0000
-CODE:   DS.W 16
-OPCODES: DC.W %0000,%0001,%0010,%0011,%0100,%0101,%0110,%10
-         DC.W %11000,%11001,%11010,%11011,%11100,%11101,%11110    
+CODE:   DS.W 16    
 EIR:    DC.W 0 ;eregistro de instruccion
 EPC:    DC.W 0 ;econtador de programa
 ET0:    DC.W 0 ;eregistro T0
@@ -162,7 +160,51 @@ TO_SIX:                 ; tenemos 011X. Como sabemos que no exixte la instrucció
     BRA     TO_END
 
 TO_SEVEN:               ; tenemos 1
-        
+    BTST    #14,D1
+    BNE     TO_EIGHT
+    MOVE.W  #7,(A1)+
+    BRA     TO_END
+
+TO_EIGHT:               ; tenemos 11XXX   
+    BTST    #13,D1
+    BNE     TO_TWELVE
+    ; tenemos 110XX
+    BTST    #12,D1
+    BNE     TO_TEN
+    ; tenemos 1100X
+    BTST    #11,D1
+    BNE     TO_NINE
+    MOVE.W  #8,(A1)+
+    BRA     TO_END
+    
+TO_NINE: 
+    MOVE.W  #9,(A1)+
+    BRA     TO_END       
+
+TO_TEN:                 ; 1101X
+    BTST    #11,D1
+    BNE     TO_ELEVEN
+    MOVE.W  #10,(A1)+
+    BRA     TO_END
+    
+TO_ELEVEN:
+    MOVE.W  #11,(A1)+
+    BRA     TO_END
+TO_TWELVE:              ; tenemos 111XX
+    BTST    #12,D1
+    BNE     TO_FOURTEEN
+    ; tenemos 1110X
+    BTST    #11,D1
+    BNE     TO_THIRTEEN
+    MOVE.W  #12,(A1)+
+    BRA     TO_END
+    
+TO_THIRTEEN:
+    MOVE.W  #13,(A1)+
+    BRA     TO_END
+    
+TO_FOURTEEN:
+    MOVE.W  #14,(A1)+
 TO_END:
     
     DBRA    D0,LOOP
@@ -172,7 +214,8 @@ TO_END:
     END    START
 
 
+
 *~Font name~Courier New~
-*~Font size~10~
+*~Font size~12~
 *~Tab type~1~
 *~Tab size~4~
