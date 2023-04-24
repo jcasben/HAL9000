@@ -22,7 +22,8 @@ EX7:    DC.W 0 ;eregistro X7
 ESR:    DC.W 0 ;eregistro de estado (00000000 00000CNZ)
 
 START:
-    CLR.W EPC
+    CLR.W   EPC
+    MOVE.W  #0,EPC
 
 FETCH:
     ;--- IFETCH: INICIO FETCH
@@ -30,10 +31,13 @@ FETCH:
         ;*** en el EIR la siguiente instruccion a ejecutar, indicada por el EPC,
 	    ;*** y dejar listo el EPC para que apunte a la siguiente instruccion
 	
-	        ; ESCRIBID VUESTRO CODIGO AQUI	    
+	        ; ESCRIBID VUESTRO CODIGO AQUI
+	MOVE.W  EPC,D0
+	MULU.W  #2,D0
+    MOVE.W  EMEM(D0),EIR
+    ADDQ.W  #1,EPC	    
         
     ;--- FFETCH: FIN FETCH
-    
     
     
     ;--- IBRDECOD: INICIO SALTO A DECOD
@@ -41,7 +45,14 @@ FETCH:
         ;*** DECOD, llamar a la subrutina, y vaciar la pila correctamente,
         ;*** almacenando el resultado de la decodificacion en D1
 
-    	    ; ESCRIBID VUESTRO CODIGO AQUI    	    
+    	    ; ESCRIBID VUESTRO CODIGO AQUI
+    SUBQ.W  #2,SP
+    MOVE.W  EIR,-(SP)
+    JSR     DECOD
+    ADDQ.W  #2,SP
+    MOVE.L  #0,A0
+    MOVE.W  (SP)+,CODE(A0)
+    ADDQ.L  #2,A0 	    
         
     ;--- FBRDECOD: FIN SALTO A DECOD
     
@@ -111,13 +122,9 @@ ELSH:
         ;*** decodificacion, que debera ser de libreria, siguiendo la interfaz
         ;*** especificada en el enunciado
 DECOD:
-    MOVE.W  #16,D0
-    SUBQ.W  #1,D0
-    LEA     EMEM,A0
-    LEA     CODE,A1
-    LOOP:
-    
-    MOVE.W  (A0)+,D1
+    MOVE.L  D1,-(SP)
+    MOVE.W  8(SP),D1
+
     BTST    #15,D1
     BNE     TO_SEVEN
     BTST    #14,D1      ; tenemos 0X
@@ -126,43 +133,45 @@ DECOD:
     BNE     TO_TWO
     BTST    #12,D1      ; tenemos 000
     BNE     TO_ONE
-    MOVE.W    #0,(A1)+
+    MOVE.W    #0,10(SP)
     BRA     TO_END
     
 TO_ONE:                 ; tenemos 0001
-    MOVE.W  #1,(A1)+
+    MOVE.W  #1,10(SP)
     BRA     TO_END
+    
 TO_TWO:                 ; tenemos 001X
     BTST    #12,D1
     BNE     TO_THREE
-    MOVE.W  #2,(A1)+
+    MOVE.W  #2,10(SP)
     BRA     TO_END
     
 TO_THREE:               ; tenemos 0011
-    MOVE.W  #3,(A1)+
+    MOVE.W  #3,10(SP)
     BRA     TO_END
+    
 TO_FOUR:                ; tenemios 01XX
     BTST    #13,D1
     BNE     TO_SIX
     ; tenemos 010X
     BTST    #12,D1
     BNE     TO_FIVE
-    MOVE.W  #4,(A1)+    ; tenemos 0100
+    MOVE.W  #4,10(SP)    ; tenemos 0100
     BRA     TO_END
     
 TO_FIVE:                ; tenemos 0101
-    MOVE.W  #5,(A1)+
+    MOVE.W  #5,10(SP)
     BRA     TO_END
     
 TO_SIX:                 ; tenemos 011X. Como sabemos que no exixte la instrucción 0111, 
                         ; podemos asegurar que estamos ante la instrucción 0110
-    MOVE.W  #6,(A1)+
+    MOVE.W  #6,10(SP)
     BRA     TO_END
 
 TO_SEVEN:               ; tenemos 1
     BTST    #14,D1
     BNE     TO_EIGHT
-    MOVE.W  #7,(A1)+
+    MOVE.W  #7,10(SP)
     BRA     TO_END
 
 TO_EIGHT:               ; tenemos 11XXX   
@@ -174,40 +183,44 @@ TO_EIGHT:               ; tenemos 11XXX
     ; tenemos 1100X
     BTST    #11,D1
     BNE     TO_NINE
-    MOVE.W  #8,(A1)+
+    MOVE.W  #8,10(SP)
     BRA     TO_END
     
-TO_NINE: 
-    MOVE.W  #9,(A1)+
+TO_NINE:                ; tenemos 11001
+    MOVE.W  #9,10(SP)
     BRA     TO_END       
 
-TO_TEN:                 ; 1101X
+TO_TEN:                 ; tenemos 1101X
     BTST    #11,D1
     BNE     TO_ELEVEN
-    MOVE.W  #10,(A1)+
+    MOVE.W  #10,10(SP)
     BRA     TO_END
     
-TO_ELEVEN:
-    MOVE.W  #11,(A1)+
+TO_ELEVEN:              ; tenemos 11011
+    MOVE.W  #11,10(SP)
     BRA     TO_END
+    
 TO_TWELVE:              ; tenemos 111XX
     BTST    #12,D1
     BNE     TO_FOURTEEN
     ; tenemos 1110X
     BTST    #11,D1
     BNE     TO_THIRTEEN
-    MOVE.W  #12,(A1)+
+    ; tenemos 11100
+    MOVE.W  #12,10(SP)
     BRA     TO_END
     
-TO_THIRTEEN:
-    MOVE.W  #13,(A1)+
+TO_THIRTEEN:            ; tenemos 11101
+    MOVE.W  #13,10(SP)
     BRA     TO_END
     
-TO_FOURTEEN:
-    MOVE.W  #14,(A1)+
+TO_FOURTEEN:            ; tenemos 11110
+    MOVE.W  #14,10(SP)
+    
 TO_END:
     
-    DBRA    D0,LOOP
+    MOVE.L (SP)+,D1
+    RTS  
 	        ; ESCRIBID VUESTRO CODIGO AQUI
 
     ;--- FDECOD: FIN DECOD
