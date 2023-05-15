@@ -8,7 +8,6 @@
 EMEM:   DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017,$F160
         DC.W $F170,$CE70,$3040,$EFFD,$501E,$4008,$8000,$0001
         DC.W $0001,$0001,$0001,$0001,$0001,$0000,$0000,$0000
-CODE:   DS.W 16    
 EIR:    DC.W 0 ;eregistro de instruccion
 EPC:    DC.W 0 ;econtador de programa
 ET0:    DC.W 0 ;eregistro T0
@@ -34,7 +33,8 @@ FETCH:
 	        ; ESCRIBID VUESTRO CODIGO AQUI
 	MOVE.W  EPC,D0
 	MULU.W  #2,D0
-    MOVE.W  EMEM(D0),EIR
+	MOVE.W  D0,A0
+    MOVE.W  EMEM(A0),EIR
     ADDQ.W  #1,EPC	    
         
     ;--- FFETCH: FIN FETCH
@@ -51,7 +51,7 @@ FETCH:
     JSR     DECOD
     ADDQ.W  #2,SP
     MOVE.L  #0,A0
-    MOVE.W  (SP)+,CODE(A0)
+    MOVE.W  (SP)+,D1
     ADDQ.L  #2,A0 	    
         
     ;--- FBRDECOD: FIN SALTO A DECOD
@@ -89,13 +89,60 @@ JMPLIST:
 	
 	; ESCRIBID EN CADA ETIQUETA LA FASE DE EJECUCION DE CADA INSTRUCCION
 ELOA:
+        MOVE.W  EIR,D0  ;0000xxxmmmmmmmmi
+        MOVE.W  EIR,D1   
+        AND.W   #%0000000111111110,D0
+        LSR.L   #1,D0
+        MOVE.W  D0,A1
+        BTST    #0,D1
+        BNE     TO_T1LOA
+        
+        MOVE.W  EMEM(A1),ET0
+        BRA     FETCH
+TO_T1LOA: 
+        MOVE.W  EMEM(A1),ET1
+        BRA     FETCH 
+        ; falta actualizar flags
+        
 ESTO:
+        MOVE.W  EIR,D0  ;0001xxxmmmmmmmmi
+        MOVE.W  EIR,D1   
+        AND.W   #%0000000111111110,D0
+        LSR.L   #1,D0
+        MOVE.W  D0,A1
+        BTST    #0,D1
+        BNE     TO_T1STO
+        
+        MOVE.W  (ET0),EMEM(A1)
+        BRA     FETCH
+TO_T1STO:
+        MOVE.W  (ET1),EMEM(A1)
+        BRA     FETCH
+        
 ELOIP:
+        MOVE.W  EIR,D0
+        MOVE.W  EIR,D1
+        AND.W   #%0000000001110000,D0
+        LSR.L   #4,D0
+        MOVE.W  D0,D7
+        JSR     DECODE_XB
+        MOVE.L  (A6),D2
+        MOVE.L  (D2),D3
+        BTST    #0,D1
+        BNE     TO_T1LOIP
+        
+        MOVE.W  D3,T0
+        BRA     FETCH
+TO_T1LOIP:
+        MOVE.W  D3,T1
+        BRA     FETCH
+        
 ESTIP:
 EGOI:
 EGOZ:
 EGON:
 EEXIT:
+        SIMHALT         ; halt simulator
 ECOPY:
 EADD:
 ESUB:
@@ -112,6 +159,43 @@ ELSH:
         ;*** SALVO DECOD, que va en la siguiente seccion
 
 	        ; ESCRIBID VUESTRO CODIGO AQUI
+DECODE_XB:
+        ; decodificación para saber el Xb sobre el cual
+        ; se hará la operación
+        BTST    #2,D7
+        BNE     FROM_4
+        BTST    #0,D7
+        BNE     FROM_3
+        
+        LEA.L  EX2,A6
+        RTS
+        
+FROM_3:
+        LEA.L  EX3,A6
+        RTS
+        
+FROM_4:
+        BTST    #1,D7
+        BNE     FROM_6
+        BTST    #0,D7
+        BNE     FROM_5
+        
+        LEA.L  EX4,A6
+        RTS
+        
+FROM_5:
+        LEA.L  EX5,A6
+        RTS
+        
+FROM_6:
+        BTST    #0,D7
+        BNE     FROM_7
+        LEA.L  EX6,A6
+        RTS
+
+FROM_7:
+        LEA.L  EX7,A6
+        RTS
         
     ;--- FSUBR: FIN SUBRUTINAS
     
@@ -228,7 +312,10 @@ TO_END:
 
 
 
+
+
+
 *~Font name~Courier New~
-*~Font size~12~
+*~Font size~14~
 *~Tab type~1~
 *~Tab size~4~
