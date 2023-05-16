@@ -7,8 +7,7 @@ instrucciones son de 16 bits. La HAL9000 posee los siguientes registros:
 
 - T0 y T1, que se utilizan como interfaz con la memoria, adem´as de poder ser empleados en algunas operaciones de tipo ALU como operando.
 
-- X2, X3, X4, X5, X6 y X7, que son de propósito general y se utilizan fundamentalmente en operaciones de tipo ALU, ya sea como operando fuente o como operando
--   destino.
+- X2, X3, X4, X5, X6 y X7, que son de propósito general y se utilizan fundamentalmente en operaciones de tipo ALU, ya sea como operando fuente o como operando destino.
 
 La tabla que se muestra a continuación contiene las instrucciones del procesador, junto con su codificación, la operación que realiza en el lenguaje de
 transferencia entre registros y los flags que actualiza la instrucción. Debajo de esta tabla, se encuentra una leyenda que explica cada uno de los símbolos e
