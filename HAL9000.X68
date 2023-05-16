@@ -94,14 +94,17 @@ ELOA:   ; ****** ELOA: COMIENZO DE ELOA ***************************************
         MOVE.W  EIR,D1   
         AND.W   #%0000000111111110,D0
         LSR.L   #1,D0
-        MOVE.W  D0,A1
+        MOVEA.W D0,A1       
         BTST    #0,D1
         BNE     TO_T1LOA
         
         MOVE.W  EMEM(A1),ET0
+        JSR     SET_FLAGS_ZN
         BRA     FETCH
+        
 TO_T1LOA: 
         MOVE.W  EMEM(A1),ET1
+        JSR     SET_FLAGS_ZN
         BRA     FETCH 
         
         ; falta actualizar flags ----------------------------------------------
@@ -145,10 +148,12 @@ ELOIP:  ; ****** ELOIP: COMIENZO DE ELOIP *************************************
         BNE     TO_T1LOIP
         
         MOVE.W  D3,ET0
+        JSR     SET_FLAGS_ZN
         BRA     FETCH
         
 TO_T1LOIP:
         MOVE.W  D3,ET1
+        JSR     SET_FLAGS_ZN
         BRA     FETCH
         
         ; falta actualizar flags ----------------------------------------------
@@ -251,7 +256,7 @@ ECOPY:  ; ****** ECOPY: COMIENZO DE ECOPY *************************************
         ; A1 = RC
         ; RC <-- [RB]
         MOVE.W  (A0),(A1)
-        
+        JSR     SET_FLAGS_ZN
         BRA     FETCH
         
         ; ****** ECOPY: FINAL DE ECOPY **************************************** 
@@ -280,6 +285,7 @@ EADD:   ; ****** EADD: COMIENZO DE EADD ***************************************
         ; hacemos la suma:
         MOVE    (A0),D4
         ADD.W   (A2),D4
+        JSR     SET_FLAGS_CZN
         MOVE.W  D4,(A1)
         
         BRA     FETCH
@@ -312,6 +318,7 @@ ESUB:   ; ****** ESUB: COMIENZO DE ESUB ***************************************
         ; A2 = RA
         MOVE.W  (A2),D4
         SUB.W   (A0),D4
+        JSR     SET_FLAGS_CZN
         MOVE.W  D4,(A1)
         
         BRA     FETCH
@@ -345,6 +352,7 @@ EAND:   ; ****** EAND: COMIENZO DE EAND ***************************************
         
         MOVE.W  (A2),D4
         AND.W   (A0),D4
+        JSR     SET_FLAGS_ZN
         MOVE.W  D4,(A1)
         
         BRA     FETCH
@@ -364,7 +372,8 @@ ESET:   ; ****** ESET: COMIENZO DE ESET ***************************************
         JSR     DECODE_RX
         MOVEA.W A6,A1 : extraemos Rc
         MOVE.W  D0,(A1)
-        
+        JSR     SET_FLAGS_ZN
+
         BRA     FETCH
 
         ; ****** ESET: FINAL DE ESET ******************************************
@@ -382,6 +391,7 @@ EADQ:   ; ****** EADQ: COMIENZO DE EADQ ***************************************
         JSR     DECODE_RX
         MOVEA.W A6,A1 : extraemos Rc
         ADD.W   D0,(A1)
+        JSR     SET_FLAGS_CZN
         
         BRA FETCH
 
@@ -407,16 +417,18 @@ ELSH:   ; ****** ELSH: COMIENZO DE ELSH ***************************************
         MOVE.W  (A0),D3
         LSL.L   D1,D3
         MOVE    D3,(A0) ; ******mirar si es A0 o (A0)
+        JSR     SET_FLAGS_CZN
         
         BRA     FETCH
 RSHIFT:
         MOVE.W  (A0),D3
         LSR.L   D1,D3
-        MOVE    D3,(A0) 
+        MOVE    D3,(A0)
+        JSR     SET_FLAGS_CZN 
 
         BRA     FETCH
         
-        ; ****** ELSH: ELSH DE ELSH *******************************************
+        ; ****** ELSH: FINAL DE ELSH ******************************************
         
         
     ;--- FEXEC: FIN EJECUCION
@@ -483,6 +495,73 @@ FROM_6:
 FROM_7:
         LEA.L   EX7,A6
         RTS
+        
+        
+SET_FLAGS_ZN:  ; ****** SET_FLAGS_ZN: COMIENZO DE SET_FLAGS_ZN ****************
+
+        ; flags del 68K -> XNZVC
+        ; flags del HAL9K -> CZN
+        
+        MOVE.W  ESR,D6
+        MOVE.W  SR,D7
+
+SET_Z:
+        BTST    #2,D7
+        BNE     SET_Z_1
+        BCLR    #1,D6
+        BRA     SET_N
+SET_Z_1:
+        BSET    #1,D6
+
+SET_N:
+        BTST    #3,D7
+        BNE     SET_N_1
+        BCLR    #0,D6 
+        MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR       
+        RTS
+SET_N_1:
+        BSET    #0,D6
+        MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR
+        RTS
+        
+               ; ****** SET_FLAGS_ZN: FINAL DE SET_FLAGS_ZN ********************
+              
+
+SET_FLAGS_CZN:   ; ****** SET_FLAGS_CZN: COMIENZO DE SET_FLAGS_CZN ************
+
+        MOVE.W  ESR,D6
+        MOVE.W  SR,D7
+
+SET_Z_:
+        BTST    #2,D7
+        BNE     SET_Z_1_
+        BCLR    #1,D6
+        BRA     SET_N_
+SET_Z_1_:
+        BSET    #1,D6
+
+SET_N_:
+        BTST    #3,D7
+        BNE     SET_N_1_
+        BCLR    #0,D6        
+        BRA     SET_C
+        
+SET_N_1_:
+        BSET    #0,D6
+
+SET_C:
+        BTST    #0,D7
+        BNE     SET_C_1
+        BCLR    #2,D6
+        MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR
+        RTS
+
+SET_C_1:
+        BTST    #2,D6  
+        MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR
+        RTS             
+                 ; ****** SET_FLAGS_CZN: COMIENZO DE SET_FLAGS_CZN ************
+            
         
     ;--- FSUBR: FIN SUBRUTINAS
     
@@ -596,6 +675,7 @@ TO_END:
 
     ;--- FDECOD: FIN DECOD
     END    START
+
 
 
 
