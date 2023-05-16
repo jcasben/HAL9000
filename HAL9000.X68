@@ -88,7 +88,8 @@ JMPLIST:
         ;*** En esta seccion debeis implementar la ejecucion de cada einstr.
 	
 	; ESCRIBID EN CADA ETIQUETA LA FASE DE EJECUCION DE CADA INSTRUCCION
-ELOA:
+ELOA:   ; ****** ELOA: COMIENZO DE ELOA ***************************************
+
         MOVE.W  EIR,D0  ;0000xxxmmmmmmmmi
         MOVE.W  EIR,D1   
         AND.W   #%0000000111111110,D0
@@ -102,9 +103,13 @@ ELOA:
 TO_T1LOA: 
         MOVE.W  EMEM(A1),ET1
         BRA     FETCH 
-        ; falta actualizar flags
         
-ESTO:
+        ; falta actualizar flags ----------------------------------------------
+        ; ****** ELOA: FINAL DE ELOA ******************************************
+        
+        
+ESTO:   ; ****** ESTO: COMIENZO DE ESTO ***************************************
+
         MOVE.W  EIR,D0  ;0001xxxmmmmmmmmi
         MOVE.W  EIR,D1   
         AND.W   #%0000000111111110,D0
@@ -119,37 +124,301 @@ TO_T1STO:
         MOVE.W  (ET1),EMEM(A1)
         BRA     FETCH
         
-ELOIP:
+        ; ****** ESTO: FINAL DE ESTO ******************************************
+        
+        
+ELOIP:  ; ****** ELOIP: COMIENZO DE ELOIP *************************************
+
         MOVE.W  EIR,D0
         MOVE.W  EIR,D1
         AND.W   #%0000000001110000,D0
         LSR.L   #4,D0
         MOVE.W  D0,D7
-        JSR     DECODE_XB
-        MOVE.L  (A6),D2
-        MOVE.L  (D2),D3
+        JSR     DECODE_RX
+        MOVEA.L (A6),A5 ; contenido del registro Rb
+        MOVE.L  A5,D3   ; contenido del contenido del registro Rb
+        ; post-incremento del contenido del registro Rb
+        ADDA.L  #2,A5
+        MOVE.W  A5,(A6)
+  
         BTST    #0,D1
         BNE     TO_T1LOIP
         
-        MOVE.W  D3,T0
-        BRA     FETCH
-TO_T1LOIP:
-        MOVE.W  D3,T1
+        MOVE.W  D3,ET0
         BRA     FETCH
         
-ESTIP:
-EGOI:
-EGOZ:
-EGON:
-EEXIT:
+TO_T1LOIP:
+        MOVE.W  D3,ET1
+        BRA     FETCH
+        
+        ; falta actualizar flags ----------------------------------------------
+        ; ****** ELOIP: FINAL DE ELOIP ****************************************
+        
+        
+ESTIP:  ; ****** ESTIP: COMIENZO DE ESTIP *************************************
+
+        MOVE.W  EIR,D0
+        MOVE.W  EIR,D1
+        AND.W   #%0000000001110000,D0
+        LSR.L   #4,D0
+        MOVE.W  D0,D7
+        JSR     DECODE_RX
+        MOVE.L  (A6),A5 ;contenido del registro Rb
+        ; post-incremento del contenido del registro Rb
+        
+        BTST    #0,D1
+        BNE     TO_T1ESTIP
+        
+        MOVE.W  ET1,A5
+        ADDA.L  #2,A5
+        MOVE.W  A5,(A6)
+        BRA     FETCH
+
+TO_T1ESTIP:
+        MOVE.W  ET1,A5
+        ; post-incremento del contenido de Xb
+        ADDA.L  #2,A5
+        MOVE.W  A5,(A6)
+        BRA     FETCH
+        
+        ; ****** ESTIP: FINAL DE ESTIP ****************************************
+
+
+EGOI:   ; ****** EGOI: COMIENZO DE EGOI ***************************************
+
+        MOVE.W  EIR,D0  ;0001xxxmmmmmmmmx  
+        AND.W   #%0000000111111110,D0
+        LSR.L   #1,D0
+        MOVE.W  D0,EPC
+        BRA     FETCH
+        
+        ; ****** EGOI: FINAL DE EGOI ******************************************
+
+
+EGOZ:   ; ****** EGOZ: COMIENZO DE EGOZ ***************************************
+
+        MOVE.W  EIR,D0  ;0001xxxmmmmmmmmx  
+        AND.W   #%0000000111111110,D0
+        LSR.L   #1,D0
+        BTST    #0,ESR
+        BNE     TO_GOZ
+        BRA     FETCH
+        
+TO_GOZ:
+        MOVE.W  D0,EPC
+        BRA     FETCH
+        
+        ; ****** EGOZ: FINAL DE EGOZ ******************************************
+
+
+EGON:   ; ****** EGON: COMIENZO DE EGON ***************************************
+
+        MOVE.W  EIR,D0  ;0001xxxmmmmmmmmx  
+        AND.W   #%0000000111111110,D0
+        LSR.L   #1,D0
+        BTST    #1,ESR
+        BNE     TO_GON
+        BRA     FETCH
+        
+TO_GON:
+        MOVE.W  D0,EPC
+        BRA     FETCH
+        
+        ; ****** EGON: FINAL DE EGON ****************************************** 
+
+ 
+EEXIT:  ; ****** EXIT: COMIENZO DE EEXIT **************************************
+
         SIMHALT         ; halt simulator
-ECOPY:
-EADD:
-ESUB:
-EAND:
-ESET:
-EADQ:
-ELSH:
+        
+        ; ****** EEXIT: FINAL DE EEXIT ****************************************
+
+
+ECOPY:  ; ****** ECOPY: COMIENZO DE ECOPY *************************************
+
+        MOVE.W  EIR,D0
+        MOVE.W  EIR,D1
+        AND.W   #%0000000001110000,D0
+        LSR.L   #4,D0
+        MOVE.W  D0,D7
+        JSR     DECODE_RX
+        MOVEA.W A6,A0 ;exraemos Rb
+        AND.W   #%0000000000000111,D1
+        MOVE    D1,D7 
+        JSR     DECODE_RX
+        MOVEA.W A6,A1 ; extraemos Rc
+        ; A0 = RB
+        ; A1 = RC
+        ; RC <-- [RB]
+        MOVE.W  (A0),(A1)
+        
+        BRA     FETCH
+        
+        ; ****** ECOPY: FINAL DE ECOPY **************************************** 
+        
+ 
+EADD:   ; ****** EADD: COMIENZO DE EADD ***************************************
+
+        MOVE.W  EIR,D0
+        MOVE.W  EIR,D1
+        MOVE.W  EIR,D3
+        AND.W   #%0000000001110000,D0
+        LSR.L   #4,D0
+        MOVE.W  D0,D7
+        JSR     DECODE_RX
+        MOVEA.W A6,A0 ; extraemos Rb
+        AND.W   #%0000000000000111,D1
+        MOVE    D1,D7 
+        JSR     DECODE_RX
+        MOVEA.W A6,A1 : extraemos Rc
+        AND.W   #%0000011100000000,D3
+        LSR.L   #8,D3
+        MOVE.W  D3,D7 
+        JSR     DECODE_RX
+        MOVEA.L A6,A2 ; extraemos Ra
+        
+        ; hacemos la suma:
+        MOVE    (A0),D4
+        ADD.W   (A2),D4
+        MOVE.W  D4,(A1)
+        
+        BRA     FETCH
+        
+        ; ****** EADD: FINAL DE EADD ******************************************
+        
+        
+ESUB:   ; ****** ESUB: COMIENZO DE ESUB ***************************************
+
+        MOVE.W  EIR,D0
+        MOVE.W  EIR,D1
+        MOVE.W  EIR,D3
+        AND.W   #%0000000001110000,D0
+        LSR.L   #4,D0
+        MOVE.W  D0,D7
+        JSR     DECODE_RX
+        MOVEA.W A6,A0 ; extraemos Rb
+        AND.W   #%0000000000000111,D1
+        MOVE    D1,D7 
+        JSR     DECODE_RX
+        MOVEA.W A6,A1 : extraemos Rc
+        AND.W   #%0000011100000000,D3
+        LSR.L   #8,D3
+        MOVE.W  D3,D7 
+        JSR     DECODE_RX
+        MOVEA.L A6,A2 ; extraemos Ra
+        
+        ; hacemos la resta:
+        ; A0 = RB
+        ; A2 = RA
+        MOVE.W  (A2),D4
+        SUB.W   (A0),D4
+        MOVE.W  D4,(A1)
+        
+        BRA     FETCH
+        
+        ; ****** ESUB: FINAL DE ESUB ******************************************
+        
+        
+EAND:   ; ****** EAND: COMIENZO DE EAND ***************************************
+
+        MOVE.W  EIR,D0
+        MOVE.W  EIR,D1
+        MOVE.W  EIR,D3
+        AND.W   #%0000000001110000,D0
+        LSR.L   #4,D0
+        MOVE.W  D0,D7
+        JSR     DECODE_RX
+        MOVEA.W A6,A0 ; extraemos Rb
+        AND.W   #%0000000000000111,D1
+        MOVE    D1,D7 
+        JSR     DECODE_RX
+        MOVEA.W A6,A1 : extraemos Rc
+        AND.W   #%0000011100000000,D3
+        LSR.L   #8,D3
+        MOVE.W  D3,D7 
+        JSR     DECODE_RX
+        MOVEA.L A6,A2 ; extraemos Ra
+        
+        ; hacemos la AND:
+        ; A0 = RB
+        ; A2 = RA
+        
+        MOVE.W  (A2),D4
+        AND.W   (A0),D4
+        MOVE.W  D4,(A1)
+        
+        BRA     FETCH
+        
+        ; ****** EAND: FINAL DE EAND ******************************************
+        
+        
+ESET:   ; ****** ESET: COMIENZO DE ESET ***************************************
+
+        MOVE.W  EIR,D0
+        MOVE.W  EIR,D1
+        AND.W   #%0000011111111000,D0
+        LSR.L   #3,D0
+        EXT.W   D0
+        AND.W   #%0000000000000111,D1
+        MOVE    D1,D7 
+        JSR     DECODE_RX
+        MOVEA.W A6,A1 : extraemos Rc
+        MOVE.W  D0,(A1)
+        
+        BRA     FETCH
+
+        ; ****** ESET: FINAL DE ESET ******************************************
+        
+        
+EADQ:   ; ****** EADQ: COMIENZO DE EADQ ***************************************
+
+        MOVE.W  EIR,D0
+        MOVE.W  EIR,D1
+        AND.W   #%0000011111111000,D0
+        LSR.L   #3,D0
+        EXT.W   D0
+        AND.W   #%0000000000000111,D1
+        MOVE    D1,D7 
+        JSR     DECODE_RX
+        MOVEA.W A6,A1 : extraemos Rc
+        ADD.W   D0,(A1)
+        
+        BRA FETCH
+
+        ; ****** EADQ: FINAL DE EADQ ******************************************
+
+
+ELSH:   ; ****** ELSH: COMIENZO DE ELSH ***************************************
+
+        MOVE    EIR,D0
+        MOVE    EIR,D1
+        MOVE    EIR,D2
+        AND.W   #%0000000001110000,D0
+        LSR.L   #4,D0
+        MOVE.W  D0,D7
+        JSR     DECODE_RX
+        MOVEA.W A6,A0 ; extraemos Rb
+        AND.W   #%0000011100000000,D1
+        LSR.L   #8,D1 ;p
+
+        BTST    #0,D2
+        BNE     RSHIFT
+        
+        MOVE.W  (A0),D3
+        LSL.L   D1,D3
+        MOVE    D3,(A0) ; ******mirar si es A0 o (A0)
+        
+        BRA     FETCH
+RSHIFT:
+        MOVE.W  (A0),D3
+        LSR.L   D1,D3
+        MOVE    D3,(A0) 
+
+        BRA     FETCH
+        
+        ; ****** ELSH: ELSH DE ELSH *******************************************
+        
+        
     ;--- FEXEC: FIN EJECUCION
     
     
@@ -159,19 +428,37 @@ ELSH:
         ;*** SALVO DECOD, que va en la siguiente seccion
 
 	        ; ESCRIBID VUESTRO CODIGO AQUI
-DECODE_XB:
-        ; decodificación para saber el Xb sobre el cual
-        ; se hará la operación
+DECODE_RX:
+        ; Decodificación para saber el Rx sobre el cual
+        ; se hará la operación. Pasamos por parametro 
+        ; el valor de los tres bits que nos indicara
+        ; el numero del registro mediante el D7. Posteriormente
+        ; la subrutina devuelve la dirección del registro mediante
+        ; el registro A6.
         BTST    #2,D7
         BNE     FROM_4
+        ;tenemoos 0xx
+        BTST    #1,D7
+        BNE     FROM_2
+        ;tenemos 00x
         BTST    #0,D7
-        BNE     FROM_3
+        BNE     FROM_1
+        ;tenemos 000
+        LEA.L   ET0,A6
+        RTS   
         
-        LEA.L  EX2,A6
+        
+FROM_1:
+        LEA.L   ET1,A6
         RTS
         
+FROM_2:       
+        BTST    #0,D7
+        BNE     FROM_3
+        LEA.L   EX2,A6
+        RTS 
 FROM_3:
-        LEA.L  EX3,A6
+        LEA.L   EX3,A6
         RTS
         
 FROM_4:
@@ -180,21 +467,21 @@ FROM_4:
         BTST    #0,D7
         BNE     FROM_5
         
-        LEA.L  EX4,A6
+        LEA.L   EX4,A6
         RTS
         
 FROM_5:
-        LEA.L  EX5,A6
+        LEA.L   EX5,A6
         RTS
         
 FROM_6:
         BTST    #0,D7
         BNE     FROM_7
-        LEA.L  EX6,A6
+        LEA.L   EX6,A6
         RTS
 
 FROM_7:
-        LEA.L  EX7,A6
+        LEA.L   EX7,A6
         RTS
         
     ;--- FSUBR: FIN SUBRUTINAS
@@ -309,6 +596,8 @@ TO_END:
 
     ;--- FDECOD: FIN DECOD
     END    START
+
+
 
 
 
