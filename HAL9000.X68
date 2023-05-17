@@ -1,8 +1,8 @@
 *-----------------------------------------------------------
 * Title      : PRAFIN23
-* Written by : MARC LINK CLADERA y JESÚS CASTILLO BENITO
+* Written by : MARC LINK CLADERA y JES�S CASTILLO BENITO
 * Date       : 19/05/2023
-* Description: c Emulador de la HAL9000
+* Description: Emulador de la HAL9000
 *-----------------------------------------------------------
     ORG $1000
 EMEM:   DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017,$F160
@@ -23,7 +23,7 @@ ESR:    DC.W 0 ;eregistro de estado (00000000 00000CNZ)
 
 START:
     	CLR.W   EPC
-   	MOVE.W  #0,EPC
+   	    MOVE.W  #0,EPC
 
 FETCH:
     ;--- IFETCH: INICIO FETCH
@@ -32,9 +32,9 @@ FETCH:
 	    ;*** y dejar listo el EPC para que apunte a la siguiente instruccion
 	
 	        ; ESCRIBID VUESTRO CODIGO AQUI
-	MOVE.W  EPC,D0
-	MULU.W  #2,D0
-	MOVE.W  D0,A0
+	    MOVE.W  EPC,D0
+	    MULU.W  #2,D0
+	    MOVE.W  D0,A0
     	MOVE.W  EMEM(A0),EIR
     	ADDQ.W  #1,EPC	    
     
@@ -110,7 +110,6 @@ TO_T1LOA:
         JSR     SET_FLAGS_ZN
         BRA     FETCH 
         
-        ; falta actualizar flags ----------------------------------------------
         ; ****** ELOA: FINAL DE ELOA ******************************************
         
         
@@ -159,7 +158,6 @@ TO_T1LOIP:
         JSR     SET_FLAGS_ZN
         BRA     FETCH
         
-        ; falta actualizar flags ----------------------------------------------
         ; ****** ELOIP: FINAL DE ELOIP ****************************************
         
         
@@ -451,8 +449,8 @@ RSHIFT:
 	        ; ESCRIBID VUESTRO CODIGO AQUI
 DECODE_RX: ; ****** DECODE_RX: COMIENZO DE DECODE_RX **************************
 
-        ; Decodificación para saber el Rx sobre el cual
-        ; se hará la operación. Pasamos por parametro 
+        ; Decodificaci�n para saber el Rx sobre el cual
+        ; se hará la operaci�n. Pasamos por parametro 
         ; el valor de los tres bits que nos indicara
         ; el numero del registro mediante el D7. Posteriormente
         ; la subrutina devuelve la dirección del registro mediante
@@ -688,6 +686,7 @@ TO_END:
     	;--- FDECOD: FIN DECOD
 	
     END    START
+
 
 
 
