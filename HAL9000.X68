@@ -2,12 +2,13 @@
 * Title      : PRAFIN23
 * Written by : MARC LINK CLADERA y JESÚS CASTILLO BENITO
 * Date       : 19/05/2023
-* Description: Emulador de la HAL9000
+* Description: c Emulador de la HAL9000
 *-----------------------------------------------------------
     ORG $1000
 EMEM:   DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017,$F160
         DC.W $F170,$CE70,$3040,$EFFD,$501E,$4008,$8000,$0001
         DC.W $0001,$0001,$0001,$0001,$0001,$0000,$0000,$0000
+        
 EIR:    DC.W 0 ;eregistro de instruccion
 EPC:    DC.W 0 ;econtador de programa
 ET0:    DC.W 0 ;eregistro T0
@@ -36,6 +37,7 @@ FETCH:
 	MOVE.W  D0,A0
     MOVE.W  EMEM(A0),EIR
     ADDQ.W  #1,EPC	    
+    
         
     ;--- FFETCH: FIN FETCH
     
@@ -94,6 +96,7 @@ ELOA:   ; ****** ELOA: COMIENZO DE ELOA ***************************************
         MOVE.W  EIR,D1   
         AND.W   #%0000000111111110,D0
         LSR.L   #1,D0
+        MULU.W  #2,D0
         MOVEA.W D0,A1       
         BTST    #0,D1
         BNE     TO_T1LOA
@@ -117,6 +120,7 @@ ESTO:   ; ****** ESTO: COMIENZO DE ESTO ***************************************
         MOVE.W  EIR,D1   
         AND.W   #%0000000111111110,D0
         LSR.L   #1,D0
+        MULU.W  #2,D0
         MOVE.W  D0,A1
         BTST    #0,D1
         BNE     TO_T1STO
@@ -138,21 +142,21 @@ ELOIP:  ; ****** ELOIP: COMIENZO DE ELOIP *************************************
         LSR.L   #4,D0
         MOVE.W  D0,D7
         JSR     DECODE_RX
-        MOVEA.L (A6),A5 ; contenido del registro Rb
-        MOVE.L  A5,D3   ; contenido del contenido del registro Rb
-        ; post-incremento del contenido del registro Rb
-        ADDA.L  #2,A5
-        MOVE.W  A5,(A6)
+        MOVE.W (A6),D2
+        MULU.W  #2,D2
+        MOVE.W  D2,A5
+        ADD.W   #1,(A6)
+        
   
         BTST    #0,D1
         BNE     TO_T1LOIP
         
-        MOVE.W  D3,ET0
+        MOVE.W  EMEM(A5),ET0
         JSR     SET_FLAGS_ZN
         BRA     FETCH
         
 TO_T1LOIP:
-        MOVE.W  D3,ET1
+        MOVE.W  EMEM(A5),ET1
         JSR     SET_FLAGS_ZN
         BRA     FETCH
         
@@ -168,23 +172,22 @@ ESTIP:  ; ****** ESTIP: COMIENZO DE ESTIP *************************************
         LSR.L   #4,D0
         MOVE.W  D0,D7
         JSR     DECODE_RX
-        MOVE.L  (A6),A5 ;contenido del registro Rb
-        ; post-incremento del contenido del registro Rb
+        MOVE.W (A6),D2
+        MULU.W  #2,D2
+        MOVE.W  D2,A5
+        ADD.W   #1,(A6)
         
+  
         BTST    #0,D1
         BNE     TO_T1ESTIP
         
-        MOVE.W  ET1,A5
-        ADDA.L  #2,A5
-        MOVE.W  A5,(A6)
+        MOVE.W  ET0,EMEM(A5)
+        BRA     FETCH
+        
+TO_T1ESTIP:
+        MOVE.W  ET1,EMEM(A5)
         BRA     FETCH
 
-TO_T1ESTIP:
-        MOVE.W  ET1,A5
-        ; post-incremento del contenido de Xb
-        ADDA.L  #2,A5
-        MOVE.W  A5,(A6)
-        BRA     FETCH
         
         ; ****** ESTIP: FINAL DE ESTIP ****************************************
 
@@ -203,9 +206,10 @@ EGOI:   ; ****** EGOI: COMIENZO DE EGOI ***************************************
 EGOZ:   ; ****** EGOZ: COMIENZO DE EGOZ ***************************************
 
         MOVE.W  EIR,D0  ;0001xxxmmmmmmmmx  
+        MOVE.W  ESR,D1
         AND.W   #%0000000111111110,D0
         LSR.L   #1,D0
-        BTST    #0,ESR
+        BTST    #0,D1
         BNE     TO_GOZ
         BRA     FETCH
         
@@ -218,10 +222,11 @@ TO_GOZ:
 
 EGON:   ; ****** EGON: COMIENZO DE EGON ***************************************
 
-        MOVE.W  EIR,D0  ;0001xxxmmmmmmmmx  
+        MOVE.W  EIR,D0  ;0001xxxmmmmmmmmx 
+        MOVE.W  ESR,D1 
         AND.W   #%0000000111111110,D0
         LSR.L   #1,D0
-        BTST    #1,ESR
+        BTST    #1,D1
         BNE     TO_GON
         BRA     FETCH
         
@@ -316,10 +321,16 @@ ESUB:   ; ****** ESUB: COMIENZO DE ESUB ***************************************
         ; hacemos la resta:
         ; A0 = RB
         ; A2 = RA
-        MOVE.W  (A2),D4
-        SUB.W   (A0),D4
+    
+        ; negamos el operado b
+        MOVE.W  (A2),D5
+        NOT.W   D5
+        ADDQ.W  #1,D5
+        ; a - b = a + (b'+1)
+        ADD.W   (A0),D5
+        
         JSR     SET_FLAGS_CZN
-        MOVE.W  D4,(A1)
+        MOVE.W  D5,(A1)
         
         BRA     FETCH
         
@@ -500,54 +511,54 @@ FROM_7:
 SET_FLAGS_ZN:  ; ****** SET_FLAGS_ZN: COMIENZO DE SET_FLAGS_ZN ****************
 
         ; flags del 68K -> XNZVC
-        ; flags del HAL9K -> CZN
+        ; flags del HAL9K -> CNZ
         
-        MOVE.W  ESR,D6
         MOVE.W  SR,D7
+        MOVE.W  ESR,D6
 
 SET_Z:
         BTST    #2,D7
         BNE     SET_Z_1
-        BCLR    #1,D6
+        BCLR    #0,D6
         BRA     SET_N
 SET_Z_1:
-        BSET    #1,D6
+        BSET    #0,D6
 
 SET_N:
         BTST    #3,D7
         BNE     SET_N_1
-        BCLR    #0,D6 
+        BCLR    #1,D6 
         MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR       
         RTS
 SET_N_1:
-        BSET    #0,D6
+        BSET    #1,D6
         MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR
         RTS
         
-               ; ****** SET_FLAGS_ZN: FINAL DE SET_FLAGS_ZN ********************
+               ; ****** SET_FLAGS_ZN: FINAL DE SET_FLAGS_ZN *******************
               
 
 SET_FLAGS_CZN:   ; ****** SET_FLAGS_CZN: COMIENZO DE SET_FLAGS_CZN ************
-
-        MOVE.W  ESR,D6
+        
         MOVE.W  SR,D7
+        MOVE.W  ESR,D6
 
 SET_Z_:
         BTST    #2,D7
         BNE     SET_Z_1_
-        BCLR    #1,D6
+        BCLR    #0,D6
         BRA     SET_N_
 SET_Z_1_:
-        BSET    #1,D6
+        BSET    #0,D6
 
 SET_N_:
         BTST    #3,D7
         BNE     SET_N_1_
-        BCLR    #0,D6        
+        BCLR    #1,D6        
         BRA     SET_C
         
 SET_N_1_:
-        BSET    #0,D6
+        BSET    #1,D6
 
 SET_C:
         BTST    #0,D7
@@ -557,7 +568,7 @@ SET_C:
         RTS
 
 SET_C_1:
-        BTST    #2,D6  
+        BSET    #2,D6  
         MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR
         RTS             
                  ; ****** SET_FLAGS_CZN: COMIENZO DE SET_FLAGS_CZN ************
@@ -675,6 +686,7 @@ TO_END:
 
     ;--- FDECOD: FIN DECOD
     END    START
+
 
 
 
