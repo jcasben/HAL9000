@@ -1,6 +1,6 @@
 *-----------------------------------------------------------
 * Title      : PRAFIN23
-* Written by : MARC LINK CLADERA y JESÚS CASTILLO BENITO
+* Written by : MARC LINK CLADERA y JESÃšS CASTILLO BENITO
 * Date       : 19/05/2023
 * Description: c Emulador de la HAL9000
 *-----------------------------------------------------------
@@ -22,8 +22,8 @@ EX7:    DC.W 0 ;eregistro X7
 ESR:    DC.W 0 ;eregistro de estado (00000000 00000CNZ)
 
 START:
-    CLR.W   EPC
-    MOVE.W  #0,EPC
+    	CLR.W   EPC
+   	MOVE.W  #0,EPC
 
 FETCH:
     ;--- IFETCH: INICIO FETCH
@@ -35,8 +35,8 @@ FETCH:
 	MOVE.W  EPC,D0
 	MULU.W  #2,D0
 	MOVE.W  D0,A0
-    MOVE.W  EMEM(A0),EIR
-    ADDQ.W  #1,EPC	    
+    	MOVE.W  EMEM(A0),EIR
+    	ADDQ.W  #1,EPC	    
     
         
     ;--- FFETCH: FIN FETCH
@@ -48,13 +48,13 @@ FETCH:
         ;*** almacenando el resultado de la decodificacion en D1
 
     	    ; ESCRIBID VUESTRO CODIGO AQUI
-    SUBQ.W  #2,SP
-    MOVE.W  EIR,-(SP)
-    JSR     DECOD
-    ADDQ.W  #2,SP
-    MOVE.L  #0,A0
-    MOVE.W  (SP)+,D1
-    ADDQ.L  #2,A0 	    
+    	SUBQ.W  #2,SP
+    	MOVE.W  EIR,-(SP)
+    	JSR     DECOD
+    	ADDQ.W  #2,SP
+    	MOVE.L  #0,A0
+    	MOVE.W  (SP)+,D1
+    	ADDQ.L  #2,A0 	    
         
     ;--- FBRDECOD: FIN SALTO A DECOD
     
@@ -63,25 +63,25 @@ FETCH:
     ;--- IBREXEC: INICIO SALTO A FASE DE EJECUCION
         ;*** Esta seccion se usa para saltar a la fase de ejecucion
         ;*** NO HACE FALTA MODIFICARLA
-    MULU #6,D1
-    MOVEA.L D1,A1
-    JMP JMPLIST(A1)
+    	MULU #6,D1
+   	 MOVEA.L D1,A1
+    	JMP JMPLIST(A1)
 JMPLIST:
-    JMP ELOA
-    JMP ESTO
-    JMP ELOIP
-    JMP ESTIP
-    JMP EGOI
-    JMP EGOZ
-    JMP EGON
-    JMP EEXIT
-    JMP ECOPY
-    JMP EADD
-    JMP ESUB
-    JMP EAND
-    JMP ESET
-    JMP EADQ
-    JMP ELSH
+    	JMP ELOA
+    	JMP ESTO
+    	JMP ELOIP
+    	JMP ESTIP
+    	JMP EGOI
+    	JMP EGOZ
+    	JMP EGON
+    	JMP EEXIT
+    	JMP ECOPY
+    	JMP EADD
+    	JMP ESUB
+    	JMP EAND
+    	JMP ESET
+    	JMP EADQ
+    	JMP ELSH
     ;--- FBREXEC: FIN SALTO A FASE DE EJECUCION
     
     
@@ -146,7 +146,6 @@ ELOIP:  ; ****** ELOIP: COMIENZO DE ELOIP *************************************
         MULU.W  #2,D2
         MOVE.W  D2,A5
         ADD.W   #1,(A6)
-        
   
         BTST    #0,D1
         BNE     TO_T1LOIP
@@ -188,7 +187,6 @@ TO_T1ESTIP:
         MOVE.W  ET1,EMEM(A5)
         BRA     FETCH
 
-        
         ; ****** ESTIP: FINAL DE ESTIP ****************************************
 
 
@@ -451,12 +449,13 @@ RSHIFT:
         ;*** SALVO DECOD, que va en la siguiente seccion
 
 	        ; ESCRIBID VUESTRO CODIGO AQUI
-DECODE_RX:
-        ; Decodificación para saber el Rx sobre el cual
-        ; se hará la operación. Pasamos por parametro 
+DECODE_RX: ; ****** DECODE_RX: COMIENZO DE DECODE_RX **************************
+
+        ; DecodificaciÃ³n para saber el Rx sobre el cual
+        ; se harÃ¡ la operaciÃ³n. Pasamos por parametro 
         ; el valor de los tres bits que nos indicara
         ; el numero del registro mediante el D7. Posteriormente
-        ; la subrutina devuelve la dirección del registro mediante
+        ; la subrutina devuelve la direcciÃ³n del registro mediante
         ; el registro A6.
         BTST    #2,D7
         BNE     FROM_4
@@ -506,6 +505,8 @@ FROM_6:
 FROM_7:
         LEA.L   EX7,A6
         RTS
+	
+	; ****** DECODE_RX: FINAL DE DECODE_RX ********************************
         
         
 SET_FLAGS_ZN:  ; ****** SET_FLAGS_ZN: COMIENZO DE SET_FLAGS_ZN ****************
@@ -583,108 +584,109 @@ SET_C_1:
         ;*** decodificacion, que debera ser de libreria, siguiendo la interfaz
         ;*** especificada en el enunciado
 DECOD:
-    MOVE.L  D1,-(SP)
-    MOVE.W  8(SP),D1
+    	MOVE.L  D1,-(SP)
+    	MOVE.W  8(SP),D1
 
-    BTST    #15,D1
-    BNE     TO_SEVEN
-    BTST    #14,D1      ; tenemos 0X
-    BNE     TO_FOUR
-    BTST    #13,D1      ; tenemos 00X
-    BNE     TO_TWO
-    BTST    #12,D1      ; tenemos 000
-    BNE     TO_ONE
-    MOVE.W    #0,10(SP)
-    BRA     TO_END
+   	BTST    #15,D1
+    	BNE     TO_SEVEN
+    	BTST    #14,D1      ; tenemos 0X
+    	BNE     TO_FOUR
+    	BTST    #13,D1      ; tenemos 00X
+    	BNE     TO_TWO
+    	BTST    #12,D1      ; tenemos 000
+    	BNE     TO_ONE
+    	MOVE.W    #0,10(SP)
+    	BRA     TO_END
     
 TO_ONE:                 ; tenemos 0001
-    MOVE.W  #1,10(SP)
-    BRA     TO_END
+    	MOVE.W  #1,10(SP)
+    	BRA     TO_END
     
 TO_TWO:                 ; tenemos 001X
-    BTST    #12,D1
-    BNE     TO_THREE
-    MOVE.W  #2,10(SP)
-    BRA     TO_END
+    	BTST    #12,D1
+    	BNE     TO_THREE
+    	MOVE.W  #2,10(SP)
+    	BRA     TO_END
     
 TO_THREE:               ; tenemos 0011
-    MOVE.W  #3,10(SP)
-    BRA     TO_END
+    	MOVE.W  #3,10(SP)
+    	BRA     TO_END
     
 TO_FOUR:                ; tenemios 01XX
-    BTST    #13,D1
-    BNE     TO_SIX
-    ; tenemos 010X
-    BTST    #12,D1
-    BNE     TO_FIVE
-    MOVE.W  #4,10(SP)    ; tenemos 0100
-    BRA     TO_END
+    	BTST    #13,D1
+    	BNE     TO_SIX
+    	; tenemos 010X
+    	BTST    #12,D1
+    	BNE     TO_FIVE
+    	MOVE.W  #4,10(SP)    ; tenemos 0100
+    	BRA     TO_END
     
 TO_FIVE:                ; tenemos 0101
-    MOVE.W  #5,10(SP)
-    BRA     TO_END
+    	MOVE.W  #5,10(SP)
+    	BRA     TO_END
     
-TO_SIX:                 ; tenemos 011X. Como sabemos que no exixte la instrucción 0111, 
-                        ; podemos asegurar que estamos ante la instrucción 0110
-    MOVE.W  #6,10(SP)
-    BRA     TO_END
+TO_SIX:                 ; tenemos 011X. Como sabemos que no exixte la instrucciÃ³n 0111, 
+                        ; podemos asegurar que estamos ante la instrucciÃ³n 0110
+    	MOVE.W  #6,10(SP)
+    	BRA     TO_END
 
 TO_SEVEN:               ; tenemos 1
-    BTST    #14,D1
-    BNE     TO_EIGHT
-    MOVE.W  #7,10(SP)
-    BRA     TO_END
+    	BTST    #14,D1
+    	BNE     TO_EIGHT
+    	MOVE.W  #7,10(SP)
+    	BRA     TO_END
 
 TO_EIGHT:               ; tenemos 11XXX   
-    BTST    #13,D1
-    BNE     TO_TWELVE
-    ; tenemos 110XX
-    BTST    #12,D1
-    BNE     TO_TEN
-    ; tenemos 1100X
-    BTST    #11,D1
-    BNE     TO_NINE
-    MOVE.W  #8,10(SP)
-    BRA     TO_END
+    	BTST    #13,D1
+    	BNE     TO_TWELVE
+    	; tenemos 110XX
+    	BTST    #12,D1
+    	BNE     TO_TEN
+    	; tenemos 1100X
+    	BTST    #11,D1
+    	BNE     TO_NINE
+    	MOVE.W  #8,10(SP)
+    	BRA     TO_END
     
 TO_NINE:                ; tenemos 11001
-    MOVE.W  #9,10(SP)
-    BRA     TO_END       
+    	MOVE.W  #9,10(SP)
+    	BRA     TO_END       
 
 TO_TEN:                 ; tenemos 1101X
-    BTST    #11,D1
-    BNE     TO_ELEVEN
-    MOVE.W  #10,10(SP)
-    BRA     TO_END
+    	BTST    #11,D1
+    	BNE     TO_ELEVEN
+    	MOVE.W  #10,10(SP)
+    	BRA     TO_END
     
 TO_ELEVEN:              ; tenemos 11011
-    MOVE.W  #11,10(SP)
-    BRA     TO_END
+    	MOVE.W  #11,10(SP)
+    	BRA     TO_END
     
 TO_TWELVE:              ; tenemos 111XX
-    BTST    #12,D1
-    BNE     TO_FOURTEEN
-    ; tenemos 1110X
-    BTST    #11,D1
-    BNE     TO_THIRTEEN
-    ; tenemos 11100
-    MOVE.W  #12,10(SP)
-    BRA     TO_END
+    	BTST    #12,D1
+    	BNE     TO_FOURTEEN
+    	; tenemos 1110X
+    	BTST    #11,D1
+    	BNE     TO_THIRTEEN
+    	; tenemos 11100
+    	MOVE.W  #12,10(SP)
+    	BRA     TO_END
     
 TO_THIRTEEN:            ; tenemos 11101
-    MOVE.W  #13,10(SP)
-    BRA     TO_END
+    	MOVE.W  #13,10(SP)
+    	BRA     TO_END
     
 TO_FOURTEEN:            ; tenemos 11110
-    MOVE.W  #14,10(SP)
+    	MOVE.W  #14,10(SP)
     
 TO_END:
     
-    MOVE.L (SP)+,D1
-    RTS  
+    	MOVE.L (SP)+,D1
+    	RTS  
 	        ; ESCRIBID VUESTRO CODIGO AQUI
 
-    ;--- FDECOD: FIN DECOD
+    	;--- FDECOD: FIN DECOD
+	
     END    START
 
 
