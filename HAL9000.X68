@@ -32,11 +32,11 @@ FETCH:
 	    ;*** y dejar listo el EPC para que apunte a la siguiente instruccion
 	
 	        ; ESCRIBID VUESTRO CODIGO AQUI
-	    MOVE.W  EPC,D0
-	    MULU.W  #2,D0
+	    MOVE.W  EPC,D0       ; extraemos el valor del pc
+	    MULU.W  #2,D0        ; lo multiplicamos por dos porque es a nivel de W
 	    MOVE.W  D0,A0
-    	MOVE.W  EMEM(A0),EIR
-    	ADDQ.W  #1,EPC	    
+    	MOVE.W  EMEM(A0),EIR ; cargamos en EIR la instrucción
+    	ADDQ.W  #1,EPC	     ; aumentamos el EPC
     
         
     ;--- FFETCH: FIN FETCH
@@ -48,12 +48,13 @@ FETCH:
         ;*** almacenando el resultado de la decodificacion en D1
 
     	    ; ESCRIBID VUESTRO CODIGO AQUI
-    	SUBQ.W  #2,SP
-    	MOVE.W  EIR,-(SP)
-    	JSR     DECOD
+    	SUBQ.W  #2,SP       ; preparamos la pila
+    	MOVE.W  EIR,-(SP)       
+    	JSR     DECOD       ; saltamos a la subrutina DECOD
     	ADDQ.W  #2,SP
     	MOVE.L  #0,A0
-    	MOVE.W  (SP)+,D1
+    	MOVE.W  (SP)+,D1    ; almacenamos el resultado de la decodificación
+    	                    ; en el registro D1
     	ADDQ.L  #2,A0 	    
         
     ;--- FBRDECOD: FIN SALTO A DECOD
@@ -91,31 +92,33 @@ JMPLIST:
 	
 	; ESCRIBID EN CADA ETIQUETA LA FASE DE EJECUCION DE CADA INSTRUCCION
 ELOA:   ; ****** ELOA: COMIENZO DE ELOA ***************************************
-
-        MOVE.W  EIR,D0  ;0000xxxmmmmmmmmi
+        
+        ; 0000xxxmmmmmmmmi
+        MOVE.W  EIR,D0  
         MOVE.W  EIR,D1   
         AND.W   #%0000000111111110,D0
         LSR.L   #1,D0
         MULU.W  #2,D0
-        MOVEA.W D0,A1       
+        MOVEA.W D0,A1            
         BTST    #0,D1
         BNE     TO_T1LOA
         
-        MOVE.W  EMEM(A1),ET0
-        JSR     SET_FLAGS_ZN
+        MOVE.W  EMEM(A1),ET0 ; movemos el contenido de la dirección M a T0
+        JSR     SET_FLAGS_ZN ; actualizamos flags
         BRA     FETCH
         
 TO_T1LOA: 
-        MOVE.W  EMEM(A1),ET1
-        JSR     SET_FLAGS_ZN
+        MOVE.W  EMEM(A1),ET1 ; movemos el contenido de la dirección M a T0
+        JSR     SET_FLAGS_ZN ; actualizamos flags
         BRA     FETCH 
         
         ; ****** ELOA: FINAL DE ELOA ******************************************
         
         
 ESTO:   ; ****** ESTO: COMIENZO DE ESTO ***************************************
-
-        MOVE.W  EIR,D0  ;0001xxxmmmmmmmmi
+        
+        ; 0001xxxmmmmmmmmi
+        MOVE.W  EIR,D0  
         MOVE.W  EIR,D1   
         AND.W   #%0000000111111110,D0
         LSR.L   #1,D0
@@ -134,7 +137,8 @@ TO_T1STO:
         
         
 ELOIP:  ; ****** ELOIP: COMIENZO DE ELOIP *************************************
-
+        
+        ;0010xxxxxbbbxxxi
         MOVE.W  EIR,D0
         MOVE.W  EIR,D1
         AND.W   #%0000000001110000,D0
@@ -162,7 +166,8 @@ TO_T1LOIP:
         
         
 ESTIP:  ; ****** ESTIP: COMIENZO DE ESTIP *************************************
-
+        
+        ; 0011xxxxxbbbxxxi
         MOVE.W  EIR,D0
         MOVE.W  EIR,D1
         AND.W   #%0000000001110000,D0
@@ -189,8 +194,9 @@ TO_T1ESTIP:
 
 
 EGOI:   ; ****** EGOI: COMIENZO DE EGOI ***************************************
-
-        MOVE.W  EIR,D0  ;0001xxxmmmmmmmmx  
+        
+        ; 0100xxxmmmmmmmmx
+        MOVE.W  EIR,D0 
         AND.W   #%0000000111111110,D0
         LSR.L   #1,D0
         MOVE.W  D0,EPC
@@ -200,8 +206,9 @@ EGOI:   ; ****** EGOI: COMIENZO DE EGOI ***************************************
 
 
 EGOZ:   ; ****** EGOZ: COMIENZO DE EGOZ ***************************************
-
-        MOVE.W  EIR,D0  ;0001xxxmmmmmmmmx  
+        
+        ; 0101xxxmmmmmmmmx
+        MOVE.W  EIR,D0
         MOVE.W  ESR,D1
         AND.W   #%0000000111111110,D0
         LSR.L   #1,D0
@@ -217,8 +224,9 @@ TO_GOZ:
 
 
 EGON:   ; ****** EGON: COMIENZO DE EGON ***************************************
-
-        MOVE.W  EIR,D0  ;0001xxxmmmmmmmmx 
+        
+        ; 0001xxxmmmmmmmmx
+        MOVE.W  EIR,D0   
         MOVE.W  ESR,D1 
         AND.W   #%0000000111111110,D0
         LSR.L   #1,D0
@@ -234,25 +242,27 @@ TO_GON:
 
  
 EEXIT:  ; ****** EXIT: COMIENZO DE EEXIT **************************************
-
-        SIMHALT         ; halt simulator
+        
+        ;10xxxxxxxxxxxxxx
+        SIMHALT             ; halt simulator
         
         ; ****** EEXIT: FINAL DE EEXIT ****************************************
 
 
 ECOPY:  ; ****** ECOPY: COMIENZO DE ECOPY *************************************
-
+        
+        ; 11000xxxxbbbxccc
         MOVE.W  EIR,D0
         MOVE.W  EIR,D1
         AND.W   #%0000000001110000,D0
         LSR.L   #4,D0
         MOVE.W  D0,D7
         JSR     DECODE_RX
-        MOVEA.W A6,A0 ;exraemos Rb
+        MOVEA.W A6,A0       ;exraemos Rb
         AND.W   #%0000000000000111,D1
         MOVE    D1,D7 
         JSR     DECODE_RX
-        MOVEA.W A6,A1 ; extraemos Rc
+        MOVEA.W A6,A1       ; extraemos Rc
         ; A0 = RB
         ; A1 = RC
         ; RC <-- [RB]
@@ -264,7 +274,8 @@ ECOPY:  ; ****** ECOPY: COMIENZO DE ECOPY *************************************
         
  
 EADD:   ; ****** EADD: COMIENZO DE EADD ***************************************
-
+        
+        ; 11001aaaxbbbxccc
         MOVE.W  EIR,D0
         MOVE.W  EIR,D1
         MOVE.W  EIR,D3
@@ -272,18 +283,18 @@ EADD:   ; ****** EADD: COMIENZO DE EADD ***************************************
         LSR.L   #4,D0
         MOVE.W  D0,D7
         JSR     DECODE_RX
-        MOVEA.W A6,A0 ; extraemos Rb
+        MOVEA.W A6,A0       ; extraemos Rb
         AND.W   #%0000000000000111,D1
         MOVE    D1,D7 
         JSR     DECODE_RX
-        MOVEA.W A6,A1 : extraemos Rc
+        MOVEA.W A6,A1       ; extraemos Rc
         AND.W   #%0000011100000000,D3
         LSR.L   #8,D3
         MOVE.W  D3,D7 
         JSR     DECODE_RX
-        MOVEA.L A6,A2 ; extraemos Ra
+        MOVEA.L A6,A2       ; extraemos Ra
         
-        ; hacemos la suma:
+                            ; hacemos la suma:
         MOVE    (A0),D4
         ADD.W   (A2),D4
         JSR     SET_FLAGS_CZN
@@ -295,7 +306,8 @@ EADD:   ; ****** EADD: COMIENZO DE EADD ***************************************
         
         
 ESUB:   ; ****** ESUB: COMIENZO DE ESUB ***************************************
-
+        
+        ; 11010aaaxbbbxccc
         MOVE.W  EIR,D0
         MOVE.W  EIR,D1
         MOVE.W  EIR,D3
@@ -303,16 +315,16 @@ ESUB:   ; ****** ESUB: COMIENZO DE ESUB ***************************************
         LSR.L   #4,D0
         MOVE.W  D0,D7
         JSR     DECODE_RX
-        MOVEA.W A6,A0 ; extraemos Rb
+        MOVEA.W A6,A0       ; extraemos Rb
         AND.W   #%0000000000000111,D1
         MOVE    D1,D7 
         JSR     DECODE_RX
-        MOVEA.W A6,A1 : extraemos Rc
+        MOVEA.W A6,A1       ; extraemos Rc
         AND.W   #%0000011100000000,D3
         LSR.L   #8,D3
         MOVE.W  D3,D7 
         JSR     DECODE_RX
-        MOVEA.L A6,A2 ; extraemos Ra
+        MOVEA.L A6,A2       ; extraemos Ra
         
         ; hacemos la resta:
         ; A0 = RB
@@ -334,7 +346,8 @@ ESUB:   ; ****** ESUB: COMIENZO DE ESUB ***************************************
         
         
 EAND:   ; ****** EAND: COMIENZO DE EAND ***************************************
-
+        
+        ; 11011aaaxbbbxccc
         MOVE.W  EIR,D0
         MOVE.W  EIR,D1
         MOVE.W  EIR,D3
@@ -342,16 +355,16 @@ EAND:   ; ****** EAND: COMIENZO DE EAND ***************************************
         LSR.L   #4,D0
         MOVE.W  D0,D7
         JSR     DECODE_RX
-        MOVEA.W A6,A0 ; extraemos Rb
+        MOVEA.W A6,A0       ; extraemos Rb
         AND.W   #%0000000000000111,D1
         MOVE    D1,D7 
         JSR     DECODE_RX
-        MOVEA.W A6,A1 : extraemos Rc
+        MOVEA.W A6,A1       ; extraemos Rc
         AND.W   #%0000011100000000,D3
         LSR.L   #8,D3
         MOVE.W  D3,D7 
         JSR     DECODE_RX
-        MOVEA.L A6,A2 ; extraemos Ra
+        MOVEA.L A6,A2       ; extraemos Ra
         
         ; hacemos la AND:
         ; A0 = RB
@@ -368,7 +381,8 @@ EAND:   ; ****** EAND: COMIENZO DE EAND ***************************************
         
         
 ESET:   ; ****** ESET: COMIENZO DE ESET ***************************************
-
+        
+        ; 11100kkkkkkkkccc
         MOVE.W  EIR,D0
         MOVE.W  EIR,D1
         AND.W   #%0000011111111000,D0
@@ -377,7 +391,7 @@ ESET:   ; ****** ESET: COMIENZO DE ESET ***************************************
         AND.W   #%0000000000000111,D1
         MOVE    D1,D7 
         JSR     DECODE_RX
-        MOVEA.W A6,A1 : extraemos Rc
+        MOVEA.W A6,A1       ; extraemos Rc
         MOVE.W  D0,(A1)
         JSR     SET_FLAGS_ZN
 
@@ -387,7 +401,8 @@ ESET:   ; ****** ESET: COMIENZO DE ESET ***************************************
         
         
 EADQ:   ; ****** EADQ: COMIENZO DE EADQ ***************************************
-
+        
+        ; 11101kkkkkkkkccc
         MOVE.W  EIR,D0
         MOVE.W  EIR,D1
         AND.W   #%0000011111111000,D0
@@ -396,8 +411,8 @@ EADQ:   ; ****** EADQ: COMIENZO DE EADQ ***************************************
         AND.W   #%0000000000000111,D1
         MOVE    D1,D7 
         JSR     DECODE_RX
-        MOVEA.W A6,A1 : extraemos Rc
-        ADD.W   D0,(A1)
+        MOVEA.W A6,A1       ; extraemos Rc
+        ADD.W   D0,(A1)     ; sumamamos
         JSR     SET_FLAGS_CZN
         
         BRA FETCH
@@ -406,7 +421,8 @@ EADQ:   ; ****** EADQ: COMIENZO DE EADQ ***************************************
 
 
 ELSH:   ; ****** ELSH: COMIENZO DE ELSH ***************************************
-
+        
+        ; 11110pppxbbbxxxn
         MOVE    EIR,D0
         MOVE    EIR,D1
         MOVE    EIR,D2
@@ -414,20 +430,20 @@ ELSH:   ; ****** ELSH: COMIENZO DE ELSH ***************************************
         LSR.L   #4,D0
         MOVE.W  D0,D7
         JSR     DECODE_RX
-        MOVEA.W A6,A0 ; extraemos Rb
+        MOVEA.W A6,A0       ; extraemos Rb
         AND.W   #%0000011100000000,D1
-        LSR.L   #8,D1 ;p
+        LSR.L   #8,D1       ;p
 
-        BTST    #0,D2
-        BNE     RSHIFT
+        BTST    #0,D2       ; comprobamos el bit 0 ya que este nos idica
+        BNE     RSHIFT      ; si es LSL o LSR
         
         MOVE.W  (A0),D3
         LSL.L   D1,D3
-        MOVE    D3,(A0) ; ******mirar si es A0 o (A0)
+        MOVE    D3,(A0) 
         JSR     SET_FLAGS_CZN
         
         BRA     FETCH
-RSHIFT:
+RSHIFT:                     ; el bit 0 de la EIR es 1
         MOVE.W  (A0),D3
         LSR.L   D1,D3
         MOVE    D3,(A0)
@@ -450,11 +466,15 @@ RSHIFT:
 DECODE_RX: ; ****** DECODE_RX: COMIENZO DE DECODE_RX **************************
 
         ; Decodificación para saber el Rx sobre el cual
-        ; se harÃ¡ la operación. Pasamos por parametro 
+        ; se hará la operación. Pasamos por parametro 
         ; el valor de los tres bits que nos indicara
-        ; el numero del registro mediante el D7. Posteriormente
-        ; la subrutina devuelve la direcciÃ³n del registro mediante
-        ; el registro A6.
+        ; el numero del registro mediante el  registro D7. 
+        ; Posteriormente la subrutina devuelve la dirección del 
+        ; registro mediante el registro A6.
+        ; Para esta subrutina simplemente hacemos un arbol de 
+        ; decodificación. Posteriormente cuando hemos encontrado el
+        ; numero, pasamos la dirección del registro correspondiente
+        
         BTST    #2,D7
         BNE     FROM_4
         ;tenemoos 0xx
@@ -509,6 +529,8 @@ FROM_7:
         
 SET_FLAGS_ZN:  ; ****** SET_FLAGS_ZN: COMIENZO DE SET_FLAGS_ZN ****************
 
+        ; esta rutina es la encargada de actualizar los
+        ; los flags ZN de la maquina emulada HAL9000 (ESR)
         ; flags del 68K -> XNZVC
         ; flags del HAL9K -> CNZ
         
@@ -527,20 +549,25 @@ SET_N:
         BTST    #3,D7
         BNE     SET_N_1
         BCLR    #1,D6 
-        MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR       
+        MOVE.W  D6,ESR      ; devolvemos el contenido actualizado a ESR       
         RTS
 SET_N_1:
         BSET    #1,D6
-        MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR
+        MOVE.W  D6,ESR      ; devolvemos el contenido actualizado a ESR
         RTS
         
                ; ****** SET_FLAGS_ZN: FINAL DE SET_FLAGS_ZN *******************
               
 
 SET_FLAGS_CZN:   ; ****** SET_FLAGS_CZN: COMIENZO DE SET_FLAGS_CZN ************
+        ; esta rutina es la encargada de actualizar los
+        ; los flags CZN de la maquina emulada HAL9000 (ESR)
         
-        MOVE.W  SR,D7
-        MOVE.W  ESR,D6
+        ; flags del 68K -> XNZVC
+        ; flags del HAL9K -> CNZ
+        
+        MOVE.W  SR,D7       ; pasamos los registros de flags a registros
+        MOVE.W  ESR,D6      ; para poder modificarlos/testearlos correctamente
 
 SET_Z_:
         BTST    #2,D7
@@ -563,12 +590,12 @@ SET_C:
         BTST    #0,D7
         BNE     SET_C_1
         BCLR    #2,D6
-        MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR
+        MOVE.W  D6,ESR      ; devolvemos el contenido actualizado a ESR
         RTS
 
 SET_C_1:
         BSET    #2,D6  
-        MOVE.W  D6,ESR ; devolvemos el contenido actualizado a ESR
+        MOVE.W  D6,ESR      ; devolvemos el contenido actualizado a ESR
         RTS             
                  ; ****** SET_FLAGS_CZN: COMIENZO DE SET_FLAGS_CZN ************
             
@@ -583,9 +610,9 @@ SET_C_1:
         ;*** especificada en el enunciado
 DECOD:
     	MOVE.L  D1,-(SP)
-    	MOVE.W  8(SP),D1
-
-   	BTST    #15,D1
+    	MOVE.W  8(SP),D1    ; extraemos el valor pasado por la pila
+                            ; procedemos a hacer el arbol de decodificación
+   	    BTST    #15,D1
     	BNE     TO_SEVEN
     	BTST    #14,D1      ; tenemos 0X
     	BNE     TO_FOUR
@@ -596,21 +623,21 @@ DECOD:
     	MOVE.W    #0,10(SP)
     	BRA     TO_END
     
-TO_ONE:                 ; tenemos 0001
+TO_ONE:                     ; tenemos 0001
     	MOVE.W  #1,10(SP)
     	BRA     TO_END
     
-TO_TWO:                 ; tenemos 001X
+TO_TWO:                     ; tenemos 001X
     	BTST    #12,D1
     	BNE     TO_THREE
     	MOVE.W  #2,10(SP)
     	BRA     TO_END
     
-TO_THREE:               ; tenemos 0011
+TO_THREE:                   ; tenemos 0011
     	MOVE.W  #3,10(SP)
     	BRA     TO_END
     
-TO_FOUR:                ; tenemios 01XX
+TO_FOUR:                    ; tenemios 01XX
     	BTST    #13,D1
     	BNE     TO_SIX
     	; tenemos 010X
@@ -619,22 +646,23 @@ TO_FOUR:                ; tenemios 01XX
     	MOVE.W  #4,10(SP)    ; tenemos 0100
     	BRA     TO_END
     
-TO_FIVE:                ; tenemos 0101
+TO_FIVE:                    ; tenemos 0101
     	MOVE.W  #5,10(SP)
     	BRA     TO_END
     
-TO_SIX:                 ; tenemos 011X. Como sabemos que no exixte la instrucciÃ³n 0111, 
-                        ; podemos asegurar que estamos ante la instrucciÃ³n 0110
+TO_SIX:                     ; tenemos 011X. Como sabemos que no exixte la
+                            ; instrucción 0111, podemos asegurar
+                            ; que estamos ante la instrucción 0110
     	MOVE.W  #6,10(SP)
     	BRA     TO_END
 
-TO_SEVEN:               ; tenemos 1
-    	BTST    #14,D1
+TO_SEVEN:                   ; tenemos 1
+    	BTST    #14,D1  
     	BNE     TO_EIGHT
     	MOVE.W  #7,10(SP)
     	BRA     TO_END
 
-TO_EIGHT:               ; tenemos 11XXX   
+TO_EIGHT:                   ; tenemos 11XXX   
     	BTST    #13,D1
     	BNE     TO_TWELVE
     	; tenemos 110XX
@@ -646,21 +674,21 @@ TO_EIGHT:               ; tenemos 11XXX
     	MOVE.W  #8,10(SP)
     	BRA     TO_END
     
-TO_NINE:                ; tenemos 11001
+TO_NINE:                    ; tenemos 11001
     	MOVE.W  #9,10(SP)
     	BRA     TO_END       
 
-TO_TEN:                 ; tenemos 1101X
+TO_TEN:                     ; tenemos 1101X
     	BTST    #11,D1
     	BNE     TO_ELEVEN
     	MOVE.W  #10,10(SP)
     	BRA     TO_END
     
-TO_ELEVEN:              ; tenemos 11011
+TO_ELEVEN:                  ; tenemos 11011
     	MOVE.W  #11,10(SP)
     	BRA     TO_END
     
-TO_TWELVE:              ; tenemos 111XX
+TO_TWELVE:                  ; tenemos 111XX
     	BTST    #12,D1
     	BNE     TO_FOURTEEN
     	; tenemos 1110X
@@ -670,32 +698,22 @@ TO_TWELVE:              ; tenemos 111XX
     	MOVE.W  #12,10(SP)
     	BRA     TO_END
     
-TO_THIRTEEN:            ; tenemos 11101
+TO_THIRTEEN:                ; tenemos 11101
     	MOVE.W  #13,10(SP)
     	BRA     TO_END
     
-TO_FOURTEEN:            ; tenemos 11110
+TO_FOURTEEN:                ; tenemos 11110
     	MOVE.W  #14,10(SP)
     
 TO_END:
     
     	MOVE.L (SP)+,D1
-    	RTS  
-	        ; ESCRIBID VUESTRO CODIGO AQUI
+    	RTS                 ; volvemos de la subrutina
+	        
 
     	;--- FDECOD: FIN DECOD
 	
     END    START
-
-
-
-
-
-
-
-
-
-
 
 *~Font name~Courier New~
 *~Font size~14~
